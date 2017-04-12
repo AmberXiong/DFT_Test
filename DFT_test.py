@@ -97,25 +97,28 @@ def Average_FFT(x, m, fft_size):
     avg_xps_dB = 10*np.log10(avg_xps)
     return [avg_xps_dB, avg_xps]
 
-## Plot the power spectrum.
+## Plot the power spectrum with/without noise.
 # @param[in] xps1 is DFT result of given signal.
 # @param[in] xps2 is DFT result with noise.
 # @param[in] freqs is an array of frequency.
+# @param[in] signal_amp is the amplitude Vpp of the given signal.
 # @param[in] sampling_rate and fft_size determine the frequency resolution.
 # @param[in] noise_type is a tring, indecate the tyoe of noise we applied to signal.
 # @param[in] m1 is mean value or lower boundary of noise.
 # @param[in] m2 is std value or higher boundary of noise.
 # @return a figure of power spectrum.
-def Plot_Multi_PS(xps1, xps2, freqs, sampling_rate, fft_size, noise_type, m1, m2): 
-    xps1_dB = xps1[0]
-    xps1_w  = xps1[1]
-    xps2_dB = xps2[0]
-    xps2_w  = xps2[1] 
+def Plot_Multi_PS(xps1, xps2, freqs, signal_amp, sampling_rate, fft_size, noise_type, m1, m2): 
+    xps1_dB    = xps1[0]
+    xps1_watt  = xps1[1]
+    xps2_dB    = xps2[0]
+    xps2_watt  = xps2[1] 
     a1 = max(xps1_dB)
     b1 = numpy.argmax(xps1_dB)
     a2 = max(xps2_dB)
     b2 = numpy.argmax(xps2_dB)
-    accuracy = abs(xps2_w[b2]-xps1_w[b2])/xps1_w[b2]
+    signal_power = signal_amp*signal_amp/2
+    accuracy1 = abs(xps1_watt[b1]-signal_power)/signal_power
+    accuracy2 = abs(xps2_watt[b2]-signal_power)/signal_power
     print(a2,b2)
     
     pl.figure(figsize=(8,6))
@@ -123,51 +126,129 @@ def Plot_Multi_PS(xps1, xps2, freqs, sampling_rate, fft_size, noise_type, m1, m2
     pl.plot(freqs, xps1_dB, label=u"Without noise")
     pl.ylabel(u'Power(dB)')
     pl.annotate('%s Hz, %s dB'%(b1*sampling_rate/fft_size, a1),xy=(freqs[b1], xps1_dB[b1]), xytext=(freqs[b1]+5, xps1_dB[b1]-30))
-    pl.legend()
+    props = dict(boxstyle='round', facecolor='none', alpha=0.5)
+    pl.text(1500, -200, 'accuracy:%s'%accuracy1, size=10, bbox=props)
+    pl.legend(fontsize=8)
     
-    pl.title(u"Power Spectrum")
+    pl.title(u"Power Spectrum(fs=%sHz, n=%s)"%(sampling_rate,fft_size))
     pl.subplot(212)
     pl.plot(freqs, xps2_dB, color='green',label=u"With %s"%(noise_type))
     pl.xlabel(u'Frequency(Hz)')
     pl.ylabel(u'Power(dB)')
     pl.annotate('%s Hz, %s dB'%(b2*sampling_rate/fft_size, a2),xy=(freqs[b2], xps2_dB[b2]), xytext=(freqs[b2]+5, xps2_dB[b2]-10))
     props = dict(boxstyle='round', facecolor='none', alpha=0.5)
-    pl.text(1500, -80, 'mean/lower-boundary:%s\nstd/higher-boundary:%s\naccuracy:%s'%(m1,m2,accuracy), size=10, bbox=props)
-    pl.legend()
+    pl.text(1500, -80, 'mean/lower-boundary:%s\nstd/higher-boundary:%s\naccuracy:%s'%(m1,m2,accuracy2), size=10, bbox=props)
+    pl.legend(fontsize=8)
     pl.savefig('power_spectrum.pdf')
 
+## Plot the power spectrum with/without window.
+# @param[in] xps1 is DFT result of the signal without noise window.
+# @param[in] xps1_w is DFT result of signal only with window.
+# @param[in] xps2 is DFT result of signal only with noise.
+# @param[in] xps2_w is DFT result of signal both with noise and window.
+# @param[in] freqs is an array of frequency.
+# @param[in] signal_amp is the amplitude of given signal.
+# @parma[in] sampling_rate and fft_size determine the frequency resolution.
+# @param[in] noise_type is a string, indecate the tyoe of noise we applied to signal.
+# @param[in] window_type is a string, indecate the type of window we applied to signal.
+# @param[in] m1 is mean value or lower boundary of noise.
+# @param[in] m2 is std value or higher boundary of noise.
+# @return a figure of power spectrum.
+def Plot_PS_W(xps1, xps1_w, xps2, xps2_w, freqs, signal_amp, sampling_rate, fft_size, noise_type, window_type, m1, m2):
+    xps1_dB     = xps1[0]
+    xps1_w_dB   = xps1_w[0]
+    xps2_dB     = xps2[0]
+    xps2_w_dB   = xps2_w[0]
+    
+    xps1_watt   = xps1[1]
+    xps1_w_watt = xps1_w[1]
+    xps2_watt   = xps2[1]
+    xps2_w_watt = xps2_w[1]
+
+    a1   = max(xps1_dB)
+    a1_w = max(xps1_w_dB)
+    b1   = numpy.argmax(xps1_dB)
+    b1_w = numpy.argmax(xps1_w_dB)
+    a2   = max(xps2_dB)
+    a2_w = max(xps2_w_dB)
+    b2   = numpy.argmax(xps2_dB)
+    b2_w = numpy.argmax(xps2_w_dB)
+
+    signal_power = signal_amp*signal_amp/2
+    accuracy1   = abs(xps1_watt[b1]-signal_power)/signal_power
+    accuracy1_w = abs(xps1_w_watt[b1_w]-signal_power)/signal_power
+    accuracy2   = abs(xps2_watt[b2]-signal_power)/signal_power
+    accuracy2_w = abs(xps2_w_watt[b2_w]-signal_power)/signal_power
+    print(a2,b2)
+
+    pl.figure(figsize=(8,6))
+    pl.subplot(211)
+    pl.plot(freqs, xps1_dB, color='green', label=u"Without noise, without window")
+    pl.plot(freqs, xps1_w_dB, label=u'Without noise, with %s window'%(window_type))
+    pl.ylabel(u'Power(dB)')
+    pl.annotate('%s Hz, %s dB'%(b1*sampling_rate/fft_size, a1),xy=(freqs[b1], xps1_dB[b1]), xytext=(freqs[b1]+5, xps1_dB[b1]-30))
+    props = dict(boxstyle='round', facecolor='none', alpha=0.5)
+    pl.text(1500, -120, 'accuracy:%s\naccuracy_w:%s'%(accuracy1,accuracy1_w), size=10, bbox=props)
+    pl.legend(fontsize=8)
+
+    pl.title(u"Power Spectrum(fs=%sHz, n=%s)"%(sampling_rate,fft_size))
+    pl.subplot(212)
+    pl.plot(freqs, xps2_dB, color='green',label=u"With %s, without window"%(noise_type))
+    pl.plot(freqs, xps2_w_dB, label=u'With %s, with %s window'%(noise_type, window_type))
+    pl.xlabel(u'Frequency(Hz)')
+    pl.ylabel(u'Power(dB)')
+    pl.annotate('%s Hz, %s dB'%(b2*sampling_rate/fft_size, a2),xy=(freqs[b2], xps2_dB[b2]), xytext=(freqs[b2]+5, xps2_dB[b2]-10))
+    props = dict(boxstyle='round', facecolor='none', alpha=0.5)
+    pl.text(1500, -100, 'mean/lower-boundary:%s\nstd/higher-boundary:%s\naccuracy:%s\naccuracy_w:%s'%(m1,m2,accuracy2,accuracy2_w), size=10, bbox=props)
+    pl.legend(fontsize=8)
+    pl.savefig('power_spectrum_wind.pdf')
+
 if __name__ == "__main__":
-
-
     sampling_rate = 5120
     fft_size      = 512
     signal_freq   = 200
-    wht_mean      = 0.5
-    wht_std       = 0.1
+    signal_amp    = 1
+    wht_mean      = 0
+    wht_std       = 0.00005
     phs_mean      = 0
-    phs_std       = 0.001
+    phs_std       = 0.0001
     Q = 1/numpy.power(2, 16)
 
     t = np.arange(0, 1.0, 1.0/sampling_rate)
     freqs = np.linspace(0, sampling_rate/2, fft_size/2+1)
     w = 2*np.pi*signal_freq*t
     
-    x = 1*np.sin(w)
+# Add noise
+    x = signal_amp*np.sin(w)
     x_wht = Add_White_Noise(x, wht_mean, wht_std, fft_size)
     x_qnt = Add_Qnt_Noise(x, -Q/2, Q/2, fft_size)
     w_phs = Add_Phase_Noise(w, phs_mean, phs_std, sampling_rate)
     x_phs = 1*np.sin(w_phs)
-    
-    y = Simple_DFT(x, fft_size)
-    y_wht = Simple_DFT(x_wht, fft_size)
-    y_qnt = Simple_DFT(x_qnt, fft_size)
-    y_phs = Simple_DFT(x_phs, fft_size)
-    
+
+# Apply window
+    window  = signal.hann(fft_size, sym=0)
+    x_w     = Apply_Window(x, window, fft_size)
+    x_wht_w = Apply_Window(x_wht, window, fft_size)
+    x_qnt_w = Apply_Window(x_qnt, window, fft_size)
+    x_phs_w = Apply_Window(x_phs, window, fft_size)
+
+# DFT    
+    y       = Simple_DFT(x, fft_size)
+    y_wht   = Simple_DFT(x_wht, fft_size)
+    y_qnt   = Simple_DFT(x_qnt, fft_size)
+    y_phs   = Simple_DFT(x_phs, fft_size)
+    y_w     = Simple_DFT(x_w, fft_size)
+    y_wht_w = Simple_DFT(x_wht_w, fft_size)
+    y_qnt_w = Simple_DFT(x_qnt_w, fft_size)
+    y_phs_w = Simple_DFT(x_phs_w, fft_size)
+
     print(y[1][20], y_wht[1][20], y_qnt[1][20], y_phs[1][20])  
     print(y[0][20], y_wht[0][20], y_qnt[0][20], y_phs[0][20])
     
-    #Plot_Multi_PS(y, y_wht, freqs, 5120, 512, 'white noise', wht_mean, wht_std)
-    #Plot_Multi_PS(y, y_qnt, freqs, 5120, 512, 'quantization noise', -Q/2, Q/2)
-    Plot_Multi_PS(y, y_phs, freqs, 5120, 512, 'phase noise', phs_mean, phs_std)
+    #Plot_Multi_PS(y, y_wht, freqs, signal_amp, sampling_rate, fft_size, 'white noise', wht_mean, wht_std)
+    #Plot_Multi_PS(y, y_qnt, freqs, signal_amp, sampling_rate, fft_size, 'quantization noise', -Q/2, Q/2)
+    #Plot_Multi_PS(y, y_phs, freqs, signal_amp, sampling_rate, fft_size, 'phase noise', phs_mean, phs_std)
 
-
+    Plot_PS_W(y, y_w, y_wht, y_wht_w, freqs, signal_amp, sampling_rate, fft_size, 'white noise', 'hanning', wht_mean, wht_std)
+    #Plot_PS_W(y, y_w, y_wht, y_wht_w, freqs, signal_amp, sampling_rate, fft_size, 'quantization noise', 'hanning', -Q/2, Q/2)
+    #Plot_PS_W(y, y_w, y_wht, y_wht_w, freqs, signal_amp, sampling_rate, fft_size, 'phase noise', 'hanning', phs_mean, phs_std)
