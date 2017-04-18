@@ -10,7 +10,7 @@ import numpy as np
 import math
 import pylab as pl
 import scipy.signal as signal
-
+import seaborn as sns
 
 ## Calculate the power spectrum of array x.
 # @param[in] xf is FFT result in frequency domain.
@@ -71,8 +71,6 @@ def Add_Qnt_Noise(x, v_fullscale, width, fft_size):
         else:
             j = (n+0.5)*Q
         rtn.append(j)
-    print('xs = ',xs)
-    print('rtn = ',rtn[1]/Q)
     return rtn
 
 ## Add phase noise to sample process.
@@ -225,43 +223,61 @@ if __name__ == "__main__":
     phs_std       = 0.0001
     v_fs          = 2
     width         = 16
-    Q = v_fs/numpy.power(2, width)
+    Q             = v_fs/numpy.power(2, width)
+    loops             = 500
 
-    t = np.arange(0, 1.0, 1.0/sampling_rate)
+    t     = np.arange(0, 1.0, 1.0/sampling_rate)
     freqs = np.linspace(0, sampling_rate/2, fft_size/2+1)
-    w = 2*np.pi*signal_freq*t
-    
-# Add noise
-    x = signal_amp*np.sin(w)
-    x_wht = Add_White_Noise(x, wht_mean, wht_std, fft_size)
-    x_qnt = Add_Qnt_Noise(x, v_fs, width, fft_size)
-    w_phs = Add_Phase_Noise(w, phs_mean, phs_std, sampling_rate)
-    x_phs = 1*np.sin(w_phs)
+    w     = 2*np.pi*signal_freq*t
 
-# Apply window
-    window  = signal.hann(fft_size, sym=0)
-    x_w     = Apply_Window(x, window, fft_size)
-    x_wht_w = Apply_Window(x_wht, window, fft_size)
-    x_qnt_w = Apply_Window(x_qnt, window, fft_size)
-    x_phs_w = Apply_Window(x_phs, window, fft_size)
+    Y       = []
+    Y_wht   = []
+    Y_phs   = []
+    Y_qnt   = []
+    Y_w     = []
+    Y_wht_w = []
+    Y_phs_w = []
+    Y_qnt_w = []
+# repeat m times, for white noise and phase noise
+    for i in range(loops):
+        x     = signal_amp*np.sin(w)
+        x_wht = Add_White_Noise(x, wht_mean, wht_std, fft_size)
+        w_phs = Add_Phase_Noise(w, phs_mean, phs_std, sampling_rate)
+        x_phs = signal_amp*np.sin(w_phs)
 
-# DFT    
-    y       = Simple_DFT(x, fft_size)
-    y_wht   = Simple_DFT(x_wht, fft_size)
-    y_qnt   = Simple_DFT(x_qnt, fft_size)
-    y_phs   = Simple_DFT(x_phs, fft_size)
-    y_w     = Simple_DFT(x_w, fft_size)
-    y_wht_w = Simple_DFT(x_wht_w, fft_size)
-    y_qnt_w = Simple_DFT(x_qnt_w, fft_size)
-    y_phs_w = Simple_DFT(x_phs_w, fft_size)
+        x_p   = signal_amp*np.sin(w+i*2*np.pi/loops+1)
+        x_qnt = Add_Qnt_Noise(x_p, v_fs, width, fft_size)
 
-    print(y[1][20], y_wht[1][20], y_qnt[1][20], y_phs[1][20])  
-    print(y[0][20], y_wht[0][20], y_qnt[0][20], y_phs[0][20])
-    
-    #Plot_Multi_PS(y, y_wht, freqs, signal_amp, sampling_rate, fft_size, 'white noise', wht_mean, wht_std)
-    #Plot_Multi_PS(y, y_qnt, freqs, signal_amp, sampling_rate, fft_size, 'quantization noise', -Q/2, Q/2)
-    #Plot_Multi_PS(y, y_phs, freqs, signal_amp, sampling_rate, fft_size, 'phase noise', phs_mean, phs_std)
+        window  = signal.hann(fft_size, sym=0)
+        x_w     = Apply_Window(x, window, fft_size)
+        x_wht_w = Apply_Window(x_wht, window, fft_size)
+        x_phs_w = Apply_Window(x_phs, window, fft_size)
+        x_qnt_w = Apply_Window(x_qnt, window, fft_size)
 
-    #Plot_PS_W(y, y_w, y_wht, y_wht_w, freqs, signal_amp, sampling_rate, fft_size, 'white noise', 'hanning', wht_mean, wht_std)
-    Plot_PS_W(y, y_w, y_qnt, y_qnt_w, freqs, signal_amp, sampling_rate, fft_size, 'quantization noise', 'hanning', -Q/2, Q/2)
-    #Plot_PS_W(y, y_w, y_phs, y_phs_w, freqs, signal_amp, sampling_rate, fft_size, 'phase noise', 'hanning', phs_mean, phs_std)
+        y       = Simple_DFT(x, fft_size)
+        y_wht   = Simple_DFT(x_wht, fft_size)
+        y_phs   = Simple_DFT(x_phs, fft_size)
+        y_qnt   = Simple_DFT(x_qnt, fft_size)
+        y_w     = Simple_DFT(x_w, fft_size)
+        y_wht_w = Simple_DFT(x_wht_w, fft_size)
+        y_phs_w = Simple_DFT(x_phs_w, fft_size)
+        y_qnt_w = Simple_DFT(x_qnt_w, fft_size)
+
+        Y.append(max(y[1]))
+        Y_wht.append(max(y_wht[1]))
+        Y_phs.append(max(y_phs[1]))
+        Y_qnt.append(max(y_qnt[1]))
+        Y_w.append(max(y_w[1]))
+        Y_wht_w.append(max(y_wht_w[1]))
+        Y_phs_w.append(max(y_phs_w[1]))
+        Y_qnt_w.append(max(y_qnt_w[1]))
+
+    print(numpy.std(Y_wht))
+    print(numpy.std(Y_wht_w))
+    print(numpy.std(Y_qnt))
+    print(numpy.std(Y_qnt_w))
+    print(numpy.mean(Y_qnt))
+    print(numpy.mean(Y_wht),numpy.mean(Y_wht_w))
+ 
+    sns.distplot(Y_wht)
+    sns.plt.show()
