@@ -9,6 +9,7 @@ import numpy
 import numpy as np
 import math
 import pylab as pl
+import matplotlib.pyplot as plt
 import scipy.signal as signal
 import seaborn as sns
 
@@ -105,6 +106,39 @@ def Average_FFT(x, m, fft_size):
         avg_xps[int(fft_size/2)] /= 2
     avg_xps_dB = 10*np.log10(avg_xps)
     return [avg_xps_dB, avg_xps]
+
+## Extract data from each frequency bin, count the numbers of the histogram bins, save data to RF_power_spectrum.dat.
+# @param[in] x is a 2_D array, it saves multiple times FFT results.
+# @param[in] freqs is an array of frequency bins.
+# @param[in] loops is the number of FFT times.
+# @param[in] lenth is the data lenth of each FFT result.
+# @param[in] bins is number of bins of histogram.
+def Data_Dist(x, freqs, loops, lenth, num_bins):
+    D    = []
+    data = open('RF_power_spectrum.txt','w')
+    for j in range(lenth):
+        d = []
+        for i in range(loops):
+            d.append(x[i][j])
+        D.append(d)
+
+    cnt     = []
+    value   = []
+    for i in range(lenth):
+        n, val, patches = plt.hist(D[i], bins=num_bins)
+        cnt.append(n)
+        value.append(val)
+    
+    for i in range(lenth):
+        for j in range(num_bins):
+            data.write(str(freqs[i]))
+            data.write('  ')
+            data.write(str(value[i][j]))
+            data.write('  ')
+            data.write(str(cnt[i][j]))
+            data.write('\n')
+        data.write('\n')
+    data.close()
 
 ## Plot the power spectrum with/without noise.
 # @param[in] xps1 is DFT result of given signal.
@@ -214,7 +248,7 @@ def Plot_PS_W(xps1, xps1_w, xps2, xps2_w, freqs, signal_amp, sampling_rate, fft_
 
 if __name__ == "__main__":
     sampling_rate = 5120
-    fft_size      = 512
+    fft_size      = 511
     signal_freq   = 200
     signal_amp    = 1
     wht_mean      = 0
@@ -224,7 +258,9 @@ if __name__ == "__main__":
     v_fs          = 2
     width         = 16
     Q             = v_fs/numpy.power(2, width)
-    loops             = 500
+    loops         = 500
+    lenth         = (fft_size+2)//2  #data lenth of FFT results 
+    num_bins      = 50
 
     t     = np.arange(0, 1.0, 1.0/sampling_rate)
     freqs = np.linspace(0, sampling_rate/2, fft_size/2+1)
@@ -238,7 +274,7 @@ if __name__ == "__main__":
     Y_wht_w = []
     Y_phs_w = []
     Y_qnt_w = []
-# repeat m times, for white noise and phase noise
+    # repeat m times, for white noise and phase noise
     for i in range(loops):
         x     = signal_amp*np.sin(w)
         x_wht = Add_White_Noise(x, wht_mean, wht_std, fft_size)
@@ -262,24 +298,29 @@ if __name__ == "__main__":
         y_wht_w = Simple_DFT(x_wht_w, fft_size)
         y_phs_w = Simple_DFT(x_phs_w, fft_size)
         y_qnt_w = Simple_DFT(x_qnt_w, fft_size)
+        # power
+        Y.append(y[1])
+        Y_wht.append(y_wht[1])
+        Y_phs.append(y_phs[1])
+        Y_qnt.append(y_qnt[1])
 
-        Y.append(max(y[1]))
-        Y_wht.append(max(y_wht[1]))
-        Y_phs.append(max(y_phs[1]))
-        Y_qnt.append(max(y_qnt[1]))
-        Y_w.append(max(y_w[1]))
-        Y_wht_w.append(max(y_wht_w[1]))
-        Y_phs_w.append(max(y_phs_w[1]))
-        Y_qnt_w.append(max(y_qnt_w[1]))
+        Y_w.append(y_w[1])
+        Y_wht_w.append(y_wht_w[1])
+        Y_phs_w.append(y_phs_w[1])
+        Y_qnt_w.append(y_qnt_w[1])
 
-    print("std_Y_wht:",numpy.std(Y_wht),"len_Y_wht:",len(Y_wht))
-    print("std_Y_wht_w:",numpy.std(Y_wht_w))
-    print("std_Y_qnt:",numpy.std(Y_qnt))
-    print("std_Y_qnt_w:",numpy.std(Y_qnt_w))
-    print("std_Y_phs_w:",numpy.std(Y_phs_w),"std_Y_phs:",numpy.std(Y_phs))
-    print("mean_Y_qnt:",numpy.mean(Y_qnt))
-    print("mean_Y_wht:",numpy.mean(Y_wht),"mean_Y_wht_w:",numpy.mean(Y_wht_w))
- 
+    D = Data_Dist(Y_wht, freqs, loops, lenth, num_bins)
+    #print(Y[0],len(Y[0]))
+    #print(D[0],len(D[0]))
+    #print("std_Y_wht:",numpy.std(Y_wht),"len_Y_wht:",len(Y_wht))
+    #print("std_Y_wht_w:",numpy.std(Y_wht_w))
+    #print("std_Y_qnt:",numpy.std(Y_qnt))
+    #print("std_Y_qnt_w:",numpy.std(Y_qnt_w))
+    #print("std_Y_phs_w:",numpy.std(Y_phs_w),"std_Y_phs:",numpy.std(Y_phs))
+    #print("mean_Y_qnt:",numpy.mean(Y_qnt))
+    #print("mean_Y_wht:",numpy.mean(Y_wht),"mean_Y_wht_w:",numpy.mean(Y_wht_w))
+   
+    #sns.distplot(D[20]) 
     #sns.distplot(Y) 
     #sns.distplot(Y_wht,label="with white noise")
     #sns.distplot(Y_qnt,label="with quantization noise")
@@ -287,5 +328,5 @@ if __name__ == "__main__":
     #sns.distplot(Y-w)
     #sns.distplot(Y_wht_w,label="with white noise and window")
     #sns.distplot(Y_qnt_w)
-    sns.distplot(Y_phs_w)
-    sns.plt.show()
+    #sns.distplot(Y_phs_w)
+    #sns.plt.show()
