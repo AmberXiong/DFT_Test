@@ -248,7 +248,7 @@ def Plot_PS_W(xps1, xps1_w, xps2, xps2_w, freqs, signal_amp, sampling_rate, fft_
 
 if __name__ == "__main__":
     sampling_rate = 4000
-    fft_size      = 9800
+    fft_size      = 256
     signal_freq   = 1300
     signal_amp    = 1
     wht_mean      = 0
@@ -258,7 +258,9 @@ if __name__ == "__main__":
     v_fs          = 2
     width         = 10
     Q             = v_fs/numpy.power(2, width)
-    loops         = 500
+    mean_num      = 320  # Take an average of every mean_num numbers
+    times         = 50  # number of results
+    loops         = mean_num*times  # number of loops
     lenth         = (fft_size+2)//2  #data lenth of FFT results 
     num_bins      = 50
 
@@ -329,22 +331,44 @@ if __name__ == "__main__":
         Y_wht_w_dB.append(y_wht_w[0])
         Y_phs_w_dB.append(y_phs_w[0])
         Y_qnt_w_dB.append(y_qnt_w[0])
+    
+    A            = numpy.sqrt(Y)  #Amplitude of signal
+    A_qnt        = numpy.sqrt(Y_qnt)
+    A_qnt_w      = numpy.sqrt(Y_qnt_w)
+    Y_mean       = []
+    Y_qnt_mean   = []
+    Y_qnt_w_mean = []
+
+    for n in range(times):
+        y_sum       = 0
+        y_qnt_sum   = 0
+        y_qnt_w_sum = 0
+        for m in range(mean_num):
+            y_sum       += A[n*mean_num+m]
+            y_qnt_sum   += A_qnt[n*mean_num+m]
+            y_qnt_w_sum += A_qnt_w[n*mean_num+m]
+        y_mean       = y_sum/mean_num
+        y_qnt_mean   = y_qnt_sum/mean_num
+        y_qnt_w_mean = y_qnt_w_sum/mean_num
+        Y_mean.append(y_mean)
+        Y_qnt_mean.append(y_qnt_mean)
+        Y_qnt_w_mean.append(y_qnt_w_mean)
 
     #D = Data_Dist(Y_wht_dB, freqs, loops, lenth, num_bins)
     #print(Y[0],len(Y[0]))
     #print(D[0],len(D[0]))
     #print("std_Y_wht:",numpy.std(Y_wht),"len_Y_wht:",len(Y_wht))
     #print("std_Y_wht_w:",numpy.std(Y_wht_w))
-    print("std_Y_qnt:",numpy.std(Y_qnt))
-    print("std_Y_qnt_w:",numpy.std(Y_qnt_w))
+    print("std_A_qnt:",numpy.std(A_qnt),"std_A_qnt_mean:",numpy.std(Y_qnt_mean))
+    print("std_A_qnt_w:",numpy.std(A_qnt_w),"std_A_qnt_w_mean:",numpy.std(Y_qnt_w_mean))
     #print("std_Y_phs_w:",numpy.std(Y_phs_w),"std_Y_phs:",numpy.std(Y_phs))
-    print("mean_Y_qnt:",numpy.mean(Y_qnt),"mean_Y_qnt_w:",numpy.mean(Y_qnt_w))
-    print("mean_Y_wht:",numpy.mean(Y_wht),"mean_Y_wht_w:",numpy.mean(Y_wht_w))
+    print("mean_A_qnt:",numpy.mean(A_qnt),"mean_A_qnt_w:",numpy.mean(A_qnt_w),"mean_A_qnt_mean:",numpy.mean(Y_qnt_mean),"mean_A_qnt_w_mean:",numpy.mean(Y_qnt_w_mean))
+    #print("mean_Y_wht:",numpy.mean(Y_wht),"mean_Y_wht_w:",numpy.mean(Y_wht_w))
    
     #sns.distplot(D[20]) 
     #sns.distplot(Y) 
     #sns.distplot(Y_wht,label="with white noise")
-    sns.distplot(Y_qnt,label="with quantization noise")
+    sns.distplot(Y_qnt_mean,label="with quantization noise")
     #sns.distplot(Y_phs,label="with phase noise")
     #sns.distplot(Y-w)
     #sns.distplot(Y_wht_w,label="with white noise and window")
