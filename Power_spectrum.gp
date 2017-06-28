@@ -16,4 +16,4 @@ set ylabel '[dBm]'
 plot 'RF_power_spectrum.csv' u 1:2:3 w p pt 5 lc palette
 
 unset output
-set term x11
+#set term x11

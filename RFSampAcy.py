@@ -113,7 +113,8 @@ def Average_FFT(x, m, fft_size):
 # @param[in] loops is the number of FFT times.
 # @param[in] lenth is the data lenth of each FFT result.
 # @param[in] bins is number of bins of histogram.
-def Data_Dist(x, freqs, loops, lenth, num_bins):
+# @param[in] output_file is a string, it's the name of output file.
+def Data_Dist(x, freqs, loops, lenth, num_bins, output_file):
     D    = []
     for j in range(lenth):
         d = []
@@ -138,7 +139,22 @@ def Data_Dist(x, freqs, loops, lenth, num_bins):
             VAL.append(value[i][j])
             CNT.append(cnt[i][j])
             DATA.append([freqs[i],value[i][j],cnt[i][j]])
-    numpy.savetxt("RF_power_spectrum.csv",DATA)    
+    numpy.savetxt(output_file ,DATA)    
+
+## Calculate the average value of x every avrg_num times.
+# @param[in] x is an array.
+# @param[in] avrg_num is the data lenth for each averaging.
+# @param[in] times is the number of averaging, len(x)>=avrg_num*times.
+# @return an array which stores the average value of x, len(X_avrg)=times.
+def Avrg_Amp(x, avrg_num, times):
+    X_avrg = []
+    for n in range(times):
+        x_sum = 0
+        for m in range(avrg_num):
+            x_sum += x[n*avrg_num+m]
+        x_avrg = x_sum/avrg_num
+        X_avrg.append(x_avrg)
+    return X_avrg
 
 ## Plot the power spectrum with/without noise.
 # @param[in] xps1 is DFT result of given signal.
@@ -335,27 +351,15 @@ if __name__ == "__main__":
     A            = numpy.sqrt(Y)  #Amplitude of signal
     A_qnt        = numpy.sqrt(Y_qnt)
     A_qnt_w      = numpy.sqrt(Y_qnt_w)
-    Y_mean       = []
-    Y_qnt_mean   = []
-    Y_qnt_w_mean = []
+    
+    Y_mean = Avrg_Amp(A, mean_num, times)
+    Y_qnt_mean = Avrg_Amp(A_qnt, mean_num, times)
+    Y_qnt_w_mean = Avrg_Amp(A_qnt_w, mean_num, times)
 
-    for n in range(times):
-        y_sum       = 0
-        y_qnt_sum   = 0
-        y_qnt_w_sum = 0
-        for m in range(mean_num):
-            y_sum       += A[n*mean_num+m]
-            y_qnt_sum   += A_qnt[n*mean_num+m]
-            y_qnt_w_sum += A_qnt_w[n*mean_num+m]
-        y_mean       = y_sum/mean_num
-        y_qnt_mean   = y_qnt_sum/mean_num
-        y_qnt_w_mean = y_qnt_w_sum/mean_num
-        Y_mean.append(y_mean)
-        Y_qnt_mean.append(y_qnt_mean)
-        Y_qnt_w_mean.append(y_qnt_w_mean)
-
-    #D = Data_Dist(Y_wht_dB, freqs, loops, lenth, num_bins)
-    #print(Y[0],len(Y[0]))
+    D_wht = Data_Dist(Y_wht_dB, freqs, loops, lenth, num_bins, "RF_whitenoise_dB.csv")
+    #D_qnt = Data_Dist(Y_qnt_dB, freqs, loops, lenth, num_bins, "RF_qntnoise_dB.csv") 
+   
+   #print(Y[0],len(Y[0]))
     #print(D[0],len(D[0]))
     #print("std_Y_wht:",numpy.std(Y_wht),"len_Y_wht:",len(Y_wht))
     #print("std_Y_wht_w:",numpy.std(Y_wht_w))
