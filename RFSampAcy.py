@@ -263,9 +263,9 @@ def Plot_PS_W(xps1, xps1_w, xps2, xps2_w, freqs, signal_amp, sampling_rate, fft_
     pl.savefig('power_spectrum_wind.pdf')
 
 if __name__ == "__main__":
-    sampling_rate = 4000
-    fft_size      = 256
-    signal_freq   = 1300
+    sampling_rate = 400
+    fft_size      = 512
+    signal_freq   = 130
     signal_amp    = 1
     wht_mean      = 0
     wht_std       = 0.00005
@@ -274,7 +274,7 @@ if __name__ == "__main__":
     v_fs          = 2
     width         = 10
     Q             = v_fs/numpy.power(2, width)
-    mean_num      = 320  # Take an average of every mean_num numbers
+    mean_num      = 160  # Take an average of every mean_num numbers
     times         = 50  # number of results
     loops         = mean_num*times  # number of loops
     lenth         = (fft_size+2)//2  #data lenth of FFT results 
@@ -309,8 +309,9 @@ if __name__ == "__main__":
         w_phs = Add_Phase_Noise(w, phs_mean, phs_std, fft_size)
         x_phs = signal_amp*np.sin(w_phs)
 
-        x_p   = signal_amp*np.sin(w+i*2*np.pi/loops+1)
+        x_p   = signal_amp*np.sin(w+i*2*np.pi/loops)
         x_qnt = Add_Qnt_Noise(x_p, v_fs, width, fft_size)
+        #print(len(x_qnt))
 
         window  = signal.hann(fft_size, sym=0)
         #print(len(window))
@@ -327,6 +328,7 @@ if __name__ == "__main__":
         y_wht_w = Simple_DFT(x_wht_w, fft_size)
         y_phs_w = Simple_DFT(x_phs_w, fft_size)
         y_qnt_w = Simple_DFT(x_qnt_w, fft_size)
+        #print(len(y[0]))
         # power
         Y.append(max(y[1]))
         Y_wht.append(max(y_wht[1]))
@@ -356,10 +358,19 @@ if __name__ == "__main__":
     Y_qnt_mean = Avrg_Amp(A_qnt, mean_num, times)
     Y_qnt_w_mean = Avrg_Amp(A_qnt_w, mean_num, times)
 
-    D_wht = Data_Dist(Y_wht_dB, freqs, loops, lenth, num_bins, "RF_whitenoise_dB.csv")
-    #D_qnt = Data_Dist(Y_qnt_dB, freqs, loops, lenth, num_bins, "RF_qntnoise_dB.csv") 
-   
-   #print(Y[0],len(Y[0]))
+    #D_wht = Data_Dist(Y_wht_dB, freqs, loops, lenth, num_bins, "RF_whitenoise_dB.csv")
+    #D_wht_w = Data_Dist(Y_wht_w_dB, freqs, loops, lenth, num_bins, "RF_wht_window.csv")
+    #D_qnt = Data_Dist(Y_qnt_dB, freqs, loops, lenth, num_bins, "RF_qnt_dB.csv")
+    #D_qnt_w = Data_Dist(Y_qnt_w_dB, freqs, loops, lenth, num_bins, "RF_qnt_window_dB.csv") 
+    
+    #nanlist=[]
+    #for i in range(loops):
+    #    for j in range(lenth):
+    #        if numpy.isnan(Y_qnt_dB[i][j]):
+    #            nanlist.append(i,j)
+    #print(nanlist)
+
+    #print(Y[0],len(Y[0]))
     #print(D[0],len(D[0]))
     #print("std_Y_wht:",numpy.std(Y_wht),"len_Y_wht:",len(Y_wht))
     #print("std_Y_wht_w:",numpy.std(Y_wht_w))
@@ -372,10 +383,12 @@ if __name__ == "__main__":
     #sns.distplot(D[20]) 
     #sns.distplot(Y) 
     #sns.distplot(Y_wht,label="with white noise")
-    sns.distplot(Y_qnt_mean,label="with quantization noise")
+    #sns.distplot(Y_qnt_mean,label="with quantization noise")
     #sns.distplot(Y_phs,label="with phase noise")
     #sns.distplot(Y-w)
     #sns.distplot(Y_wht_w,label="with white noise and window")
     #sns.distplot(Y_qnt_w)
     #sns.distplot(Y_phs_w)
-    sns.plt.show()
+    #sns.plt.show()
+    plt.hist(Y_qnt_mean, bins=10)
+    plt.show()
