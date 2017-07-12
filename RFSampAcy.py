@@ -65,12 +65,16 @@ def Add_Qnt_Noise(x, v_fullscale, width, fft_size):
     rtn = []
     for i in xs:
         n = i//Q
-        if n>=numpy.power(2,width-1):
-            j = (numpy.power(2, width-1)-0.5)*Q
-        elif n<(-numpy.power(2, width-1)):
-            j = (0.5-numpy.power(2, width-1))*Q
+        p = (i/Q)-n
+        if n > (numpy.power(2, width-1)):
+            j = v_fullscale/2
+        elif n < -(numpy.power(2, width-1)):
+            j = -(v_fullscale/2)
         else:
-            j = (n+0.5)*Q
+            if p >= 0.5:
+                j = (n+1)*Q
+            else:
+                j = n*Q
         rtn.append(j)
     return rtn
 
@@ -272,7 +276,7 @@ def Plot_PS_W(xps1, xps1_w, xps2, xps2_w, freqs, signal_amp, sampling_rate, fft_
 
 if __name__ == "__main__":
     sampling_rate = 400
-    fft_size      = 512
+    fft_size      = 1024
     signal_freq   = 130
     signal_amp    = 1
     wht_mean      = 0
@@ -282,8 +286,8 @@ if __name__ == "__main__":
     v_fs          = 2
     width         = 10
     Q             = v_fs/numpy.power(2, width)
-    mean_num      = 160  # Take an average of every mean_num numbers
-    times         = 50  # number of results
+    mean_num      = 20  # Take an average of every mean_num numbers
+    times         = 200  # number of results
     loops         = mean_num*times  # number of loops
     lenth         = (fft_size+2)//2  # data lenth of FFT results 
     num_bins      = 50  # bin number for full frequency scale
@@ -328,8 +332,11 @@ if __name__ == "__main__":
         x_phs_wht = Add_White_Noise(signal_amp*np.sin(w_phs+i*2*np.pi/loops), wht_mean, wht_std, fft_size)
         x_all = Add_Qnt_Noise(x_phs_wht, v_fs, width, fft_size) 
         
+        #window  = signal.hamming(fft_size, sym=0)
         window  = signal.hann(fft_size, sym=0)
-        
+        #window  = np.array([1 for i in range(fft_size)])
+        #window  = signal.bartlett(fft_size, sym=0)
+
         x_w     = Apply_Window(x, window, fft_size)
         x_wht_w = Apply_Window(x_wht, window, fft_size)
         x_phs_w = Apply_Window(x_phs, window, fft_size)
@@ -384,23 +391,23 @@ if __name__ == "__main__":
     A_all   = numpy.sqrt(Y_all)
     A_all_w = numpy.sqrt(Y_all_w)
     
-    Y_wht_w_mean = Avrg_Amp(A_wht_w, mean_num, times, bins, "Average_amp_dist_y_wht_w.csv")
-    Y_qnt_w_mean = Avrg_Amp(A_qnt_w, mean_num, times, bins, "Average_amp_dist_y_qnt_w.csv")
-    Y_all_w_mean = Avrg_Amp(A_all_w, mean_num, times, bins, "Average_amp_dist_y_all_w.csv")
-    Y_phs_w_mean = Avrg_Amp(A_phs_w, mean_num, times, bins, "Average_amp_dist_y_phs_w.csv")
+    #Y_wht_w_mean = Avrg_Amp(A_wht_w, mean_num, times, bins, "Average_amp_dist_y_wht_w.csv")
+    #Y_qnt_w_mean = Avrg_Amp(A_qnt_w, mean_num, times, bins, "Average_amp_dist_y_qnt_w.csv")
+    Y_all_w_mean = Avrg_Amp(A_all_w, mean_num, times, bins, "all_hann_160.csv")
+    #Y_phs_w_mean = Avrg_Amp(A_phs_w, mean_num, times, bins, "Average_amp_dist_y_phs_w.csv")
 
-    D_wht_w = Data_Dist(Y_wht_w_dB, freqs, loops, lenth, num_bins, "RF_wht_window.csv")
-    D_qnt_w = Data_Dist(Y_qnt_w_dB, freqs, loops, lenth, num_bins, "RF_qnt_window_dB.csv")
-    D_all_w = Data_Dist(Y_all_w_dB, freqs, loops, lenth, num_bins, "RF_all_window_dB.csv")
-    D_phs_w = Data_Dist(Y_phs_w_dB, freqs, loops, lenth, num_bins, "RF_phs_window_dB.csv")
+    #D_wht_w = Data_Dist(Y_wht_w_dB, freqs, loops, lenth, num_bins, "RF_wht_window.csv")
+    #D_qnt_w = Data_Dist(Y_qnt_w_dB, freqs, loops, lenth, num_bins, "RF_qnt_window_dB.csv")
+    #D_all_w = Data_Dist(Y_all_w_dB, freqs, loops, lenth, num_bins, "RF_all_window_dB.csv")
+    #D_phs_w = Data_Dist(Y_phs_w_dB, freqs, loops, lenth, num_bins, "RF_phs_window_dB.csv")
 
-    print("std_A_wht_w:",numpy.std(A_wht_w),"mean_A_wht_w:",numpy.mean(A_wht_w))
-    print("std_A_wht_w_mean:",numpy.std(Y_wht_w_mean),"mean_A_wht_w_mean:",numpy.mean(Y_wht_w_mean))
-    print("std_A_qnt_w:",numpy.std(A_qnt_w),"mean_A_qnt_w:",numpy.mean(A_qnt_w))
-    print("std_A_qnt_w_mean:",numpy.std(Y_qnt_w_mean),"mean_A_qnt_w_mean:",numpy.mean(Y_qnt_w_mean))
-    print("std_A_phs_w:",numpy.std(A_phs_w),"mean_A_phs_w:",numpy.mean(A_phs_w))
-    print("std_A_phs_w_mean:",numpy.std(Y_phs_w_mean),"mean_A_phs_w_mean:",numpy.mean(Y_phs_w_mean))
-    print("std_A_all_w:",numpy.std(A_all_w),"mean_A_all_w:",numpy.mean(A_all_w))
+    #print("std_A_wht_w:",numpy.std(A_wht_w),"mean_A_wht_w:",numpy.mean(A_wht_w))
+    #print("std_A_wht_w_mean:",numpy.std(Y_wht_w_mean),"mean_A_wht_w_mean:",numpy.mean(Y_wht_w_mean))
+    #print("std_A_qnt_w:",numpy.std(A_qnt_w),"mean_A_qnt_w:",numpy.mean(A_qnt_w))
+    #print("std_A_qnt_w_mean:",numpy.std(Y_qnt_w_mean),"mean_A_qnt_w_mean:",numpy.mean(Y_qnt_w_mean))
+    #print("std_A_phs_w:",numpy.std(A_phs_w),"mean_A_phs_w:",numpy.mean(A_phs_w))
+    #print("std_A_phs_w_mean:",numpy.std(Y_phs_w_mean),"mean_A_phs_w_mean:",numpy.mean(Y_phs_w_mean))
+    #print("std_A_all_w:",numpy.std(A_all_w),"mean_A_all_w:",numpy.mean(A_all_w))
     print("std_A_all_w_mean:",numpy.std(Y_all_w_mean),"mean_A_all_w_mean:",numpy.mean(Y_all_w_mean))
    
     #plt.hist(Y_qnt_mean, bins)
